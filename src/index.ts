@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { checkForUpdate } from "./update-check.js";
 import { registerAuth } from "./commands/auth.js";
 import { registerBalance } from "./commands/balance.js";
 import { registerInvoice } from "./commands/invoice.js";
@@ -14,7 +15,7 @@ const program = new Command();
 program
   .name("neutron-cli")
   .description("CLI for Neutron Lightning wallet — for developers and AI agents")
-  .version("0.1.0")
+  .version(require("../package.json").version)
   .option("--json", "Output as JSON (default; explicit flag for agent use)")
   .option("--pretty", "Output as human-readable text");
 
@@ -26,6 +27,8 @@ registerSend(program);
 registerTx(program);
 registerRate(program);
 registerWebhook(program);
+
+checkForUpdate(); // non-blocking, fires in background
 
 program.parseAsync(process.argv).catch((e) => {
   process.stderr.write(JSON.stringify({ error: e?.message ?? "Unknown error", code: "FATAL" }) + "\n");
