@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { ok, fail, isPretty, chalk } from "../output.js";
@@ -35,6 +35,8 @@ function saveConfigFile(cfg: Config): void {
     mkdirSync(CONFIG_DIR, { recursive: true });
   }
   writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  chmodSync(CONFIG_PATH, 0o600);  // owner read/write only
+  chmodSync(CONFIG_DIR, 0o700);   // owner access only
 }
 
 export function registerConfig(program: Command): void {
