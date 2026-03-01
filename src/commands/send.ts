@@ -6,7 +6,12 @@ import { ok, fail, isPretty, spin, header, kv, chalk } from "../output.js";
 function detectPaymentType(to: string): { method: string; ccy: string } {
   const normalized = to.trim().toLowerCase();
   
-  // Lightning invoice
+  // Lightning Address (user@domain.com)
+  if (/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(to)) {
+    return { method: "lnaddress", ccy: "BTC" };
+  }
+
+  // Lightning invoice (BOLT11)
   if (normalized.startsWith("lnbc") || normalized.startsWith("lntb")) {
     return { method: "lightning", ccy: "BTC" };
   }
@@ -52,7 +57,8 @@ export function registerSend(program: Command): void {
           fail(
             `Unrecognized address format: "${to.substring(0, 20)}..."\n` +
             `  Supported formats:\n` +
-            `    - Lightning: lnbc...\n` +
+            `    - Lightning Address: user@domain.com\n` +
+            `    - Lightning invoice: lnbc...\n` +
             `    - BTC on-chain: 1..., 3..., bc1...\n` +
             `    - USDT (TRON): T...\n` +
             `    - USDT (ETH): 0x...`,
@@ -68,8 +74,25 @@ export function registerSend(program: Command): void {
         let destReq: any;
         let sourceAmount = amount;
         
-        if (detected.method === "lightning") {
-          // Lightning payment
+        if (detected.method === "lnaddress") {
+          // Lightning Address (user@domain.com) — use payAddress SDK method
+          if (spinner) spinner.text = "Resolving Lightning address...";
+          const txn2 = await client.lightning.payAddress(to, { amountSats: amount }) as any;
+          const confirmed2 = await client.transactions.confirm(txn2.txnId ?? txn2.id) as any;
+          spinner?.succeed(chalk.green("Payment sent"));
+          if (isPretty(opts)) {
+            header("Payment Sent");
+            kv("To:", chalk.yellow(to));
+            kv("Amount:", chalk.yellow(`${amount.toLocaleString()} sats`));
+            kv("Method:", "Lightning Address");
+            kv("Status:", chalk.green(confirmed2.txnState ?? confirmed2.status ?? "Sent"));
+            console.log();
+          } else {
+            ok(confirmed2);
+          }
+          return;
+        } else if (detected.method === "lightning") {
+          // Lightning invoice (BOLT11)
           sourceAmount = sourceCcy === "BTC" ? amount / 1e8 : amount;
           destReq = { 
             ccy: "BTC", 
