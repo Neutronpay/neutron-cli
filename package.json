@@ -1,21 +1,30 @@
 {
   "name": "neutron-cli",
-  "version": "0.1.0",
-  "description": "CLI for Neutron Lightning wallet services — for developers and AI agents",
-  "keywords": ["neutron", "lightning", "bitcoin", "cli", "payments"],
+  "version": "0.1.1",
+  "description": "CLI for Neutron Lightning wallet services \u2014 for developers and AI agents",
+  "keywords": [
+    "neutron",
+    "lightning",
+    "bitcoin",
+    "cli",
+    "payments"
+  ],
   "license": "MIT",
   "bin": {
     "neutron-cli": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "files": ["dist/", "README.md"],
+  "files": [
+    "dist/",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
   "dependencies": {
     "commander": "^12.0.0",
-    "neutron-sdk": "file:../neutron-sdk"
+    "neutron-sdk": "^0.1.6"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
