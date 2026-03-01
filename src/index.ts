@@ -8,6 +8,7 @@ import { registerSend } from "./commands/send.js";
 import { registerTx } from "./commands/tx.js";
 import { registerRate } from "./commands/rate.js";
 import { registerWebhook } from "./commands/webhook.js";
+import { registerUpdate } from "./commands/update.js";
 import { registerConfig } from "./commands/config.js";
 
 const program = new Command();
@@ -27,6 +28,7 @@ registerSend(program);
 registerTx(program);
 registerRate(program);
 registerWebhook(program);
+registerUpdate(program);
 
 checkForUpdate(); // non-blocking, fires in background
 
