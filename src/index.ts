@@ -10,6 +10,9 @@ import { registerRate } from "./commands/rate.js";
 import { registerWebhook } from "./commands/webhook.js";
 import { registerUpdate } from "./commands/update.js";
 import { registerConfig } from "./commands/config.js";
+import { registerAddress } from "./commands/address.js";
+import { registerFiat } from "./commands/fiat.js";
+import { registerSwap } from "./commands/swap.js";
 
 const program = new Command();
 
@@ -27,6 +30,9 @@ registerTx(program);
 registerRate(program);
 registerWebhook(program);
 registerUpdate(program);
+registerAddress(program);
+registerFiat(program);
+registerSwap(program);
 
 checkForUpdate(); // non-blocking, fires in background
 
