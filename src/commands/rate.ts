@@ -7,7 +7,7 @@ export function registerRate(program: Command): void {
     .command("rate")
     .description("Get BTC exchange rate")
     .option("--currency <currency>", "Fiat currency code (usd, thb, sgd, etc)", "usd")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();

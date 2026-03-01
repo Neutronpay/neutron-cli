@@ -8,7 +8,7 @@ export function registerInvoice(program: Command): void {
     .description("Create a Lightning invoice")
     .requiredOption("--amount <sats>", "Amount in satoshis")
     .option("--memo <text>", "Payment memo/description")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();

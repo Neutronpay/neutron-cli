@@ -20,7 +20,7 @@ export function registerTx(program: Command): void {
 
   tx.command("get <id>")
     .description("Get a transaction by ID")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (id, opts) => {
       try {
         const client = getClient();
@@ -48,7 +48,7 @@ export function registerTx(program: Command): void {
     .option("--limit <n>", "Number of results", "10")
     .option("--from <date>", "From date (YYYY-MM-DD)")
     .option("--to <date>", "To date (YYYY-MM-DD)")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();

@@ -13,8 +13,9 @@ export function fail(message: string, code = "ERROR", exitCode = 1): never {
   process.exit(exitCode);
 }
 
-export function isPretty(opts: { pretty?: boolean }): boolean {
-  return !!opts.pretty;
+/** TUI is default. Only raw JSON when --json is explicitly passed. */
+export function isPretty(opts: { pretty?: boolean; json?: boolean }): boolean {
+  return !opts.json;
 }
 
 /** Spinner — returns ora instance so caller can .succeed()/.fail() it */

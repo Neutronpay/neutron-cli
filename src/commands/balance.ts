@@ -6,7 +6,7 @@ export function registerBalance(program: Command): void {
   program
     .command("balance")
     .description("List all wallets and balances")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();

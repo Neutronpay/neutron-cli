@@ -8,7 +8,7 @@ export function registerWebhook(program: Command): void {
   wh.command("create")
     .description("Create a webhook")
     .requiredOption("--url <url>", "Webhook endpoint URL")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();
@@ -35,7 +35,7 @@ export function registerWebhook(program: Command): void {
 
   wh.command("list")
     .description("List all webhooks")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();
@@ -65,7 +65,7 @@ export function registerWebhook(program: Command): void {
 
   wh.command("delete <id>")
     .description("Delete a webhook by ID")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (id, opts) => {
       try {
         const client = getClient();

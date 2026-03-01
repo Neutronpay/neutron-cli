@@ -45,7 +45,7 @@ export function registerConfig(program: Command): void {
     .description("Initialize config from env vars or interactive input")
     .option("--api-key <key>", "API key (or set NEUTRON_API_KEY env)")
     .option("--api-secret <secret>", "API secret (or set NEUTRON_API_SECRET env)")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const apiKey = opts.apiKey ?? process.env.NEUTRON_API_KEY;
@@ -76,7 +76,7 @@ export function registerConfig(program: Command): void {
   config
     .command("show")
     .description("Show current config (masked)")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const cfg = loadConfigFile();
@@ -112,7 +112,7 @@ export function registerConfig(program: Command): void {
   config
     .command("test")
     .description("Test credentials by calling auth endpoint")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const envKey = process.env.NEUTRON_API_KEY;

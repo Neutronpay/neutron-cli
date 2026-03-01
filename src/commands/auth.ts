@@ -6,7 +6,7 @@ export function registerAuth(program: Command): void {
   program
     .command("auth")
     .description("Verify credentials and print account info")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();

@@ -9,7 +9,7 @@ export function registerSend(program: Command): void {
     .requiredOption("--to <invoice>", "Lightning invoice (BOLT11)")
     .requiredOption("--amount <sats>", "Amount in satoshis")
     .option("--currency <currency>", "Source wallet currency", "btc")
-    .option("--pretty", "Human-readable output")
+    .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
         const client = getClient();
