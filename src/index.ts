@@ -16,9 +16,7 @@ const program = new Command();
 program
   .name("neutron-cli")
   .description("CLI for Neutron Lightning wallet — for developers and AI agents")
-  .version(require("../package.json").version)
-  .option("--json", "Output as JSON (default; explicit flag for agent use)")
-  .option("--pretty", "Output as human-readable text");
+  .version(require("../package.json").version);
 
 registerConfig(program);
 registerAuth(program);
