@@ -5,12 +5,18 @@ CLI for [Neutron](https://neutron.me) Lightning wallet services — for develope
 ## Install
 
 ```bash
-# Run without installing
-npx neutron-cli --help
-
-# Or install globally
 npm install -g neutron-cli
 ```
+
+Then use it from anywhere:
+
+```bash
+neutron-cli auth
+neutron-cli balance
+neutron-cli rate
+```
+
+> **Note:** If you just want to try it without installing, use `npx neutron-cli --help`. But for regular use, global install is recommended.
 
 ## Auth
 
