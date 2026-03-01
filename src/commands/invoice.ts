@@ -12,25 +12,25 @@ export function registerInvoice(program: Command): void {
     .action(async (opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin("Creating invoice...") : null;
+        const result = await client.lightning.createInvoice({
+          amountSats: Number(opts.amount),
+          memo: opts.memo ?? "",
+        }) as any;
+        spinner?.succeed(chalk.green("Invoice created"));
+
         if (isPretty(opts)) {
-          const spinner = spin("Creating invoice...");
-          const result = await client.lightning.createInvoice({
-            amountSats: Number(opts.amount),
-            memo: opts.memo ?? "",
-          }) as any;
-          spinner.succeed("Invoice created");
+          const invoice = result.paymentRequest ?? result.invoice ?? "—";
           header("Lightning Invoice");
-          kv("ID", result.txnId ?? result.id ?? "—");
-          kv("Amount", `${Number(opts.amount).toLocaleString()} sats`);
-          kv("Memo", opts.memo ?? "—");
-          kv("Expires", result.expiresAt ?? result.expires_at ?? "—");
-          console.log(`\n  ${chalk.dim("Invoice:")}`);
-          console.log(`  ${chalk.yellow(result.paymentRequest ?? result.invoice ?? "—")}\n`);
+          kv("ID:", result.txnId ?? result.id ?? "—");
+          kv("Amount:", `${Number(opts.amount).toLocaleString()} sats`);
+          kv("Expires:", result.expiresAt ?? result.expires_at ?? "—");
+          if (opts.memo) kv("Memo:", opts.memo);
+          console.log();
+          console.log(chalk.dim("  Invoice:"));
+          console.log(chalk.yellow("  " + invoice));
+          console.log();
         } else {
-          const result = await client.lightning.createInvoice({
-            amountSats: Number(opts.amount),
-            memo: opts.memo ?? "",
-          });
           ok(result);
         }
       } catch (e: any) {

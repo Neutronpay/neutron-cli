@@ -12,23 +12,20 @@ export function registerWebhook(program: Command): void {
     .action(async (opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin("Creating webhook...") : null;
+        const result = await client.webhooks.create({
+          callback: opts.url,
+          secret: process.env.NEUTRON_WEBHOOK_SECRET ?? crypto.randomUUID(),
+        }) as any;
+        spinner?.succeed(chalk.green("Webhook created"));
+
         if (isPretty(opts)) {
-          const spinner = spin("Creating webhook...");
-          const result = await client.webhooks.create({
-            callback: opts.url,
-            secret: process.env.NEUTRON_WEBHOOK_SECRET ?? crypto.randomUUID(),
-          }) as any;
-          spinner.succeed("Webhook created");
-          header("Webhook");
-          kv("ID", result.webhookId ?? result.id ?? "—");
-          kv("URL", opts.url);
-          kv("Secret", result.secret ? chalk.dim(result.secret) : "(none returned)");
+          header("Webhook Created");
+          kv("ID:", result.webhookId ?? result.id ?? "—");
+          kv("URL:", opts.url);
+          kv("Secret:", result.secret ?? chalk.dim("(use NEUTRON_WEBHOOK_SECRET env)"));
           console.log();
         } else {
-          const result = await client.webhooks.create({
-            callback: opts.url,
-            secret: process.env.NEUTRON_WEBHOOK_SECRET ?? crypto.randomUUID(),
-          });
           ok(result);
         }
       } catch (e: any) {
@@ -42,24 +39,24 @@ export function registerWebhook(program: Command): void {
     .action(async (opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin("Fetching webhooks...") : null;
+        const result = await client.webhooks.list() as any;
+        const hooks = result.data ?? result.webhooks ?? result ?? [];
+        spinner?.succeed(chalk.green(`${hooks.length} webhooks`));
+
         if (isPretty(opts)) {
-          const spinner = spin("Fetching webhooks...");
-          const result = await client.webhooks.list() as any;
-          const hooks = result.data ?? result.webhooks ?? result ?? [];
-          spinner.succeed(`${hooks.length} webhook(s) found`);
           header("Webhooks");
           const table = new Table({
             head: [chalk.cyan("ID"), chalk.cyan("URL")],
             style: { head: [], border: ["dim"] },
           });
           for (const h of hooks) {
-            table.push([h.webhookId ?? h.id ?? "—", h.url ?? h.callback ?? "—"]);
+            table.push([chalk.dim(h.webhookId ?? h.id ?? "—"), h.url ?? h.callback ?? "—"]);
           }
           console.log(table.toString());
           console.log();
         } else {
-          const result = await client.webhooks.list() as any;
-          ok({ webhooks: result.data ?? result.webhooks ?? result });
+          ok({ webhooks: hooks });
         }
       } catch (e: any) {
         fail(e?.message ?? "Failed to list webhooks", "WEBHOOK_LIST_ERROR");
@@ -72,13 +69,14 @@ export function registerWebhook(program: Command): void {
     .action(async (id, opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin(`Deleting ${id}...`) : null;
+        await client.webhooks.delete(id);
+        spinner?.succeed(chalk.green("Webhook deleted"));
+
         if (isPretty(opts)) {
-          const spinner = spin(`Deleting webhook ${id}...`);
-          await client.webhooks.delete(id);
-          spinner.succeed(`Webhook ${id} deleted`);
+          success(`Webhook ${chalk.dim(id)} deleted`);
           console.log();
         } else {
-          await client.webhooks.delete(id);
           ok({ deleted: id });
         }
       } catch (e: any) {

@@ -11,24 +11,23 @@ export function registerRate(program: Command): void {
     .action(async (opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin("Fetching rate...") : null;
+        const result = await client.rates.get() as any;
+        const pair = `BTC${opts.currency.toUpperCase()}`;
+        const rate = result[pair] ?? result[pair.toLowerCase()] ?? null;
+        spinner?.succeed(chalk.green("Rate fetched"));
+
         if (isPretty(opts)) {
-          const spinner = spin("Fetching rate...");
-          const result = await client.rates.get() as any;
-          const pair = `BTC${opts.currency.toUpperCase()}`;
-          const rate = result[pair] ?? result[pair.toLowerCase()] ?? null;
-          spinner.succeed("Rate fetched");
           header("Exchange Rate");
-          if (rate != null) {
-            kv("Pair", chalk.bold(pair));
-            kv("Rate", chalk.green(`${Number(rate).toLocaleString()} ${opts.currency.toUpperCase()}`));
-          } else {
-            kv("Available pairs", Object.keys(result).join(", "));
+          kv("Pair:", chalk.bold(pair));
+          kv("Rate:", rate != null
+            ? chalk.yellow(`${Number(rate).toLocaleString()} ${opts.currency.toUpperCase()} / BTC`)
+            : chalk.dim("Not available"));
+          if (rate == null) {
+            kv("Available:", Object.keys(result).join(", "));
           }
           console.log();
         } else {
-          const result = await client.rates.get() as any;
-          const pair = `BTC${opts.currency.toUpperCase()}`;
-          const rate = result[pair] ?? result[pair.toLowerCase()] ?? null;
           ok({ pair, rate, all: result });
         }
       } catch (e: any) {

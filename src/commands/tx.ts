@@ -2,6 +2,19 @@ import { Command } from "commander";
 import { getClient } from "../client.js";
 import { ok, fail, isPretty, spin, header, kv, chalk, Table } from "../output.js";
 
+const STATE_COLOR: Record<string, (s: string) => string> = {
+  completed:   (s) => chalk.green(s),
+  processing:  (s) => chalk.cyan(s),
+  quoted:      (s) => chalk.yellow(s),
+  failed:      (s) => chalk.red(s),
+  expired:     (s) => chalk.dim(s),
+};
+
+function colorState(state: string): string {
+  const fn = STATE_COLOR[state?.toLowerCase()] ?? ((s: string) => s);
+  return fn(state);
+}
+
 export function registerTx(program: Command): void {
   const tx = program.command("tx").description("Transaction commands");
 
@@ -11,19 +24,18 @@ export function registerTx(program: Command): void {
     .action(async (id, opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin("Fetching transaction...") : null;
+        const result = await client.transactions.get(id) as any;
+        spinner?.succeed(chalk.green("Transaction found"));
+
         if (isPretty(opts)) {
-          const spinner = spin(`Fetching transaction ${id}...`);
-          const result = await client.transactions.get(id) as any;
-          spinner.succeed("Transaction found");
-          header("Transaction Details");
-          kv("ID", result.txnId ?? result.id ?? "—");
-          kv("Status", colorStatus(result.txnState ?? result.status));
-          kv("Amount", result.amount ? `${result.amount.toLocaleString()} sats` : "—");
-          kv("Type", result.type ?? "—");
-          kv("Created", result.createdAt ?? result.created_at ?? "—");
+          header(`Transaction ${chalk.dim(id)}`);
+          kv("Status:", colorState(result.txnState ?? result.status ?? "—"));
+          kv("Amount:", `${(result.amount ?? 0).toLocaleString()} sats`);
+          kv("Type:", result.type ?? "—");
+          kv("Created:", result.createdAt ?? result.created_at ?? "—");
           console.log();
         } else {
-          const result = await client.transactions.get(id);
           ok(result);
         }
       } catch (e: any) {
@@ -40,47 +52,36 @@ export function registerTx(program: Command): void {
     .action(async (opts) => {
       try {
         const client = getClient();
+        const spinner = isPretty(opts) ? spin("Fetching transactions...") : null;
+        const params: Record<string, any> = { limit: Number(opts.limit) };
+        if (opts.from) params.fromDate = opts.from;
+        if (opts.to) params.toDate = opts.to;
+        const result = await client.transactions.list(params) as any;
+        const txns = result.data ?? result.transactions ?? result ?? [];
+        spinner?.succeed(chalk.green(`${txns.length} transactions`));
+
         if (isPretty(opts)) {
-          const spinner = spin("Fetching transactions...");
-          const params: Record<string, any> = { limit: Number(opts.limit) };
-          if (opts.from) params.fromDate = opts.from;
-          if (opts.to) params.toDate = opts.to;
-          const result = await client.transactions.list(params) as any;
-          const txns = result.data ?? result.transactions ?? result ?? [];
-          spinner.succeed(`${txns.length} transaction(s) found`);
           header("Transactions");
           const table = new Table({
             head: [chalk.cyan("ID"), chalk.cyan("Status"), chalk.cyan("Amount"), chalk.cyan("Date")],
             style: { head: [], border: ["dim"] },
+            colWidths: [28, 14, 16, 22],
           });
           for (const t of txns) {
-            const id = (t.txnId ?? t.id ?? "—").slice(0, 20);
-            const status = colorStatus(t.txnState ?? t.status ?? "—");
-            const amt = t.amount ? `${t.amount.toLocaleString()} sats` : "—";
-            const date = (t.createdAt ?? "—").slice(0, 10);
-            table.push([id, status, amt, date]);
+            table.push([
+              chalk.dim(t.txnId ?? t.id ?? "—"),
+              colorState(t.txnState ?? t.status ?? "—"),
+              chalk.yellow(`${(t.amount ?? 0).toLocaleString()} sats`),
+              chalk.dim(t.createdAt ?? "—"),
+            ]);
           }
           console.log(table.toString());
           console.log();
         } else {
-          const params: Record<string, any> = { limit: Number(opts.limit) };
-          if (opts.from) params.fromDate = opts.from;
-          if (opts.to) params.toDate = opts.to;
-          const result = await client.transactions.list(params) as any;
-          ok({ transactions: result.data ?? result.transactions ?? result });
+          ok({ transactions: txns });
         }
       } catch (e: any) {
         fail(e?.message ?? "Failed to list transactions", "TX_LIST_ERROR");
       }
     });
-}
-
-function colorStatus(status: string): string {
-  switch (status) {
-    case "completed": return chalk.green(status);
-    case "processing": return chalk.yellow(status);
-    case "failed": return chalk.red(status);
-    case "expired": return chalk.dim(status);
-    default: return chalk.white(status ?? "—");
-  }
 }
