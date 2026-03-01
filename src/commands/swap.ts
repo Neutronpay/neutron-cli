@@ -23,7 +23,7 @@ export function registerSwap(program: Command): void {
         // For BTC, amount is in satoshis; convert to BTC for API
         const sourceAmount = sourceCcy === "BTC" ? amount / 1e8 : amount;
 
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin(`Creating ${sourceCcy} → ${destCcy} swap...`) : null;
 
         const txn = await client.transactions.create({

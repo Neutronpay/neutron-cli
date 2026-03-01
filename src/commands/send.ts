@@ -40,8 +40,8 @@ function detectPaymentType(to: string): { method: string; ccy: string } {
 export function registerSend(program: Command): void {
   program
     .command("send")
-    .description("Send a payment (Lightning, BTC on-chain, or USDT)")
-    .requiredOption("--to <address>", "Destination address or Lightning invoice")
+    .description("Send a payment — auto-detects type from address")
+    .requiredOption("--to <address>", "user@domain.com | lnbc... | 1/3/bc1... | T... | 0x...")
     .requiredOption("--amount <number>", "Amount (sats for BTC/ Lightning, units for USDT)")
     .option("--currency <currency>", "Source wallet currency (default: auto-detect)", "btc")
     .option("--chain <chain>", "Chain for USDT (TRON or ETH)", "TRON")
@@ -66,7 +66,7 @@ export function registerSend(program: Command): void {
           );
         }
         
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin(`Preparing ${detected.method} payment...`) : null;
         
         // Build transaction based on payment type

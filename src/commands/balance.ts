@@ -9,7 +9,7 @@ export function registerBalance(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin("Fetching wallets...") : null;
         const wallets = await client.account.wallets() as any[];
         spinner?.succeed(chalk.green("Wallets loaded"));

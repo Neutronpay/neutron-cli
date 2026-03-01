@@ -78,7 +78,7 @@ async function runFirstTimeSetup(): Promise<Config> {
   return { apiKey, apiSecret };
 }
 
-export async function loadConfig(): Promise<Config> {
+export async function loadConfig(opts?: { json?: boolean }): Promise<Config> {
   // 1. Env vars
   const apiKey = process.env.NEUTRON_API_KEY;
   const apiSecret = process.env.NEUTRON_API_SECRET;
@@ -88,16 +88,19 @@ export async function loadConfig(): Promise<Config> {
   const cfg = loadConfigFile();
   if (cfg) return cfg;
 
-  // 3. First-time setup — guide the user interactively
+  // 3. Non-interactive (--json / no TTY): fail with structured error
+  if (opts?.json || !process.stdin.isTTY) {
+    process.stderr.write(JSON.stringify({ error: "No credentials found. Set NEUTRON_API_KEY and NEUTRON_API_SECRET env vars, or run: neutron-cli config init", code: "AUTH_MISSING" }) + "\n");
+    process.exit(1);
+  }
+
+  // 4. Interactive TTY: guide the user through setup
   return runFirstTimeSetup();
 }
 
-let _client: Neutron | null = null;
-
-export async function getClient(): Promise<Neutron> {
-  if (!_client) {
-    const cfg = await loadConfig();
-    _client = new Neutron({ apiKey: cfg.apiKey, apiSecret: cfg.apiSecret });
-  }
-  return _client;
+export async function getClient(opts?: { json?: boolean }): Promise<Neutron> {
+  const cfg = await loadConfig(opts);
+  return new Neutron({ apiKey: cfg.apiKey, apiSecret: cfg.apiSecret });
 }
+
+

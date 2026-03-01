@@ -10,7 +10,7 @@ export function registerRate(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin("Fetching rate...") : null;
         const result = await client.rates.get() as any;
         const pair = `BTC${opts.currency.toUpperCase()}`;

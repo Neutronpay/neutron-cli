@@ -11,7 +11,7 @@ export function registerWebhook(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin("Creating webhook...") : null;
         const result = await client.webhooks.create({
           callback: opts.url,
@@ -38,7 +38,7 @@ export function registerWebhook(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin("Fetching webhooks...") : null;
         const result = await client.webhooks.list() as any;
         const hooks = result.data ?? result.webhooks ?? result ?? [];
@@ -68,7 +68,7 @@ export function registerWebhook(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (id, opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin(`Deleting ${id}...`) : null;
         await client.webhooks.delete(id);
         spinner?.succeed(chalk.green("Webhook deleted"));

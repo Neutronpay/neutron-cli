@@ -17,7 +17,7 @@ export function registerFiat(program: Command): void {
     .action(async (opts) => {
       try {
         const country = opts.country.toUpperCase();
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin(`Fetching banks for ${country}...`) : null;
         const institutions = await client.fiat.institutions(country);
         spinner?.succeed(chalk.green(`Found ${institutions.length} institutions`));
@@ -60,7 +60,7 @@ export function registerFiat(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin("Checking account...") : null;
 
         // KYC check — fiat payouts require verification

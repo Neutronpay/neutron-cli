@@ -13,7 +13,7 @@ export function registerAddress(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin("Fetching BTC address...") : null;
         const result = await client.account.btcAddress();
         spinner?.succeed(chalk.green("Address loaded"));
@@ -46,7 +46,7 @@ export function registerAddress(program: Command): void {
           fail(`Invalid chain "${opts.chain}". Use TRON or ETH.`, "INVALID_CHAIN");
         }
 
-        const client = await getClient();
+        const client = await getClient(opts);
         const spinner = isPretty(opts) ? spin(`Fetching USDT address (${chain})...`) : null;
         const result = await client.account.usdtAddress(chain as "TRON" | "ETH");
         spinner?.succeed(chalk.green("Address loaded"));
