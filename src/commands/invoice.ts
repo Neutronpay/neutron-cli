@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
-import { ok, fail, isPretty, pretty } from "../output.js";
+import { ok, fail, isPretty, spin, header, kv, chalk } from "../output.js";
 
 export function registerInvoice(program: Command): void {
   program
@@ -8,25 +8,29 @@ export function registerInvoice(program: Command): void {
     .description("Create a Lightning invoice")
     .requiredOption("--amount <sats>", "Amount in satoshis")
     .option("--memo <text>", "Payment memo/description")
-    .option("--currency <currency>", "Currency (btc, usd, etc)", "btc")
     .option("--pretty", "Human-readable output")
     .action(async (opts) => {
       try {
         const client = getClient();
-        const result = await client.lightning.createInvoice({
-          amountSats: Number(opts.amount),
-          memo: opts.memo ?? "",
-        }) as any;
-
         if (isPretty(opts)) {
-          pretty([
-            "✅ Invoice Created",
-            `  ID:         ${result.txnId ?? result.id ?? "—"}`,
-            `  Amount:     ${Number(opts.amount).toLocaleString()} sats`,
-            `  Invoice:    ${(result.paymentRequest ?? result.invoice ?? "—").slice(0, 60)}...`,
-            `  Expires:    ${result.expiresAt ?? result.expires_at ?? "—"}`,
-          ]);
+          const spinner = spin("Creating invoice...");
+          const result = await client.lightning.createInvoice({
+            amountSats: Number(opts.amount),
+            memo: opts.memo ?? "",
+          }) as any;
+          spinner.succeed("Invoice created");
+          header("Lightning Invoice");
+          kv("ID", result.txnId ?? result.id ?? "—");
+          kv("Amount", `${Number(opts.amount).toLocaleString()} sats`);
+          kv("Memo", opts.memo ?? "—");
+          kv("Expires", result.expiresAt ?? result.expires_at ?? "—");
+          console.log(`\n  ${chalk.dim("Invoice:")}`);
+          console.log(`  ${chalk.yellow(result.paymentRequest ?? result.invoice ?? "—")}\n`);
         } else {
+          const result = await client.lightning.createInvoice({
+            amountSats: Number(opts.amount),
+            memo: opts.memo ?? "",
+          });
           ok(result);
         }
       } catch (e: any) {

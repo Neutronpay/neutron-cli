@@ -1,4 +1,8 @@
-/** Output helpers — JSON (default) or pretty human-readable */
+import chalk from "chalk";
+import Table from "cli-table3";
+import ora from "ora";
+
+export { chalk, Table, ora };
 
 export function ok(data: unknown): void {
   process.stdout.write(JSON.stringify({ ok: true, data }) + "\n");
@@ -13,6 +17,27 @@ export function isPretty(opts: { pretty?: boolean }): boolean {
   return !!opts.pretty;
 }
 
-export function pretty(lines: string[]): void {
-  console.log(lines.join("\n"));
+/** Spinner — returns ora instance so caller can .succeed()/.fail() it */
+export function spin(text: string) {
+  return ora({ text, color: "cyan" }).start();
+}
+
+/** Print a header line */
+export function header(text: string): void {
+  console.log("\n" + chalk.bold.cyan(text));
+}
+
+/** Print a key-value line */
+export function kv(key: string, value: string): void {
+  console.log(`  ${chalk.dim(key.padEnd(14))} ${chalk.white(value)}`);
+}
+
+/** Print a success line */
+export function success(text: string): void {
+  console.log(chalk.green("✅ " + text));
+}
+
+/** Print a warning line */
+export function warn(text: string): void {
+  console.log(chalk.yellow("⚠️  " + text));
 }

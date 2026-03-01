@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
-import { ok, fail, isPretty, pretty } from "../output.js";
+import { ok, fail, isPretty, spin, header, kv, success } from "../output.js";
 
 export function registerAuth(program: Command): void {
   program
@@ -10,16 +10,18 @@ export function registerAuth(program: Command): void {
     .action(async (opts) => {
       try {
         const client = getClient();
-        const account = await client.account.get();
         if (isPretty(opts)) {
-          pretty([
-            "✅ Authenticated",
-            `  Account ID:   ${(account as any).accountId ?? (account as any).id ?? "—"}`,
-            `  Name:         ${(account as any).displayName ?? (account as any).name ?? "—"}`,
-            `  Status:       ${(account as any).status ?? "—"}`,
-            `  Country:      ${(account as any).country ?? "—"}`,
-          ]);
+          const spinner = spin("Verifying credentials...");
+          const account = await client.account.get() as any;
+          spinner.succeed("Authenticated");
+          header("Account Info");
+          kv("Account ID", account.accountId ?? account.id ?? "—");
+          kv("Name", account.displayName ?? account.name ?? "—");
+          kv("Status", account.status ?? "—");
+          kv("Country", account.country ?? "—");
+          console.log();
         } else {
+          const account = await client.account.get();
           ok(account);
         }
       } catch (e: any) {

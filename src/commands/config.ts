@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import { ok, fail, isPretty, pretty } from "../output.js";
+import { ok, fail, isPretty, chalk } from "../output.js";
 import { Neutron } from "neutron-sdk";
 
 const CONFIG_DIR = join(homedir(), ".neutron");
@@ -61,12 +61,10 @@ export function registerConfig(program: Command): void {
         saveConfigFile({ apiKey, apiSecret });
 
         if (isPretty(opts)) {
-          pretty([
-            "✅ Config initialized",
-            `  Path:      ${CONFIG_PATH}`,
-            `  API Key:   ${maskSecret(apiKey)}`,
-            `  API Secret: ${maskSecret(apiSecret)}`,
-          ]);
+                    console.log('✅ Config initialized');
+          console.log('`  Path:      ${CONFIG_PATH}`');
+          console.log('`  API Key:   ${maskSecret(apiKey)}`');
+          console.log('`  API Secret: ${maskSecret(apiSecret)}`');;
         } else {
           ok({ path: CONFIG_PATH, apiKey: maskSecret(apiKey) });
         }
@@ -95,12 +93,10 @@ export function registerConfig(program: Command): void {
         const displaySecret = envSecret ?? cfg?.apiSecret ?? "";
 
         if (isPretty(opts)) {
-          pretty([
-            "✅ Current Config",
-            `  Source:     ${source === "env" ? "Environment variables" : `~/.neutron/config.json`}`,
-            `  API Key:    ${maskSecret(displayKey)}`,
-            `  API Secret: ${maskSecret(displaySecret)}`,
-          ]);
+                    console.log('✅ Current Config');
+          console.log('`  Source:     ${source === "env" ? "Environment variables" : `~/.neutron/config.json`}`');
+          console.log('`  API Key:    ${maskSecret(displayKey)}`');
+          console.log('`  API Secret: ${maskSecret(displaySecret)}`');;
         } else {
           ok({
             source,
@@ -134,12 +130,10 @@ export function registerConfig(program: Command): void {
         const account = await client.account.get();
 
         if (isPretty(opts)) {
-          pretty([
-            "✅ Credentials valid",
-            `  Account ID:   ${(account as any).accountId ?? (account as any).id ?? "—"}`,
-            `  Name:         ${(account as any).displayName ?? (account as any).name ?? "—"}`,
-            `  Status:       ${(account as any).status ?? "—"}`,
-          ]);
+                    console.log('✅ Credentials valid');
+          console.log('`  Account ID:   ${(account as any).accountId ?? (account as any).id ?? "—"}`');
+          console.log('`  Name:         ${(account as any).displayName ?? (account as any).name ?? "—"}`');
+          console.log('`  Status:       ${(account as any).status ?? "—"}`');;
         } else {
           ok({ valid: true, accountId: (account as any).accountId ?? (account as any).id });
         }
