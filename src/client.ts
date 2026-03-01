@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "fs";
-import { createInterface } from "readline";
 import { homedir } from "os";
 import { join } from "path";
 import { Neutron } from "neutron-sdk";
@@ -32,7 +31,7 @@ function saveConfigFile(cfg: Config): void {
   chmodSync(CONFIG_DIR, 0o700);
 }
 
-function promptHidden(question: string): Promise<string> {
+function promptMasked(question: string): Promise<string> {
   return new Promise((resolve) => {
     process.stdout.write(question);
     let input = "";
@@ -46,9 +45,11 @@ function promptHidden(question: string): Promise<string> {
         process.stdout.write("\n");
         resolve(input);
       } else if (ch === "\u0003") {
+        process.stdout.write("\n");
         process.exit();
-      } else if (ch === "\u007f") {
-        if (input.length > 0) { input = input.slice(0, -1); process.stdout.write("\b \b"); }
+      } else if (ch === "\u007f" || ch === "\b") {
+        // backspace — silently remove last char, no visual change
+        if (input.length > 0) input = input.slice(0, -1);
       } else {
         input += ch;
         process.stdout.write("*");
@@ -58,22 +59,15 @@ function promptHidden(question: string): Promise<string> {
   });
 }
 
-function promptLine(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); });
-  });
-}
-
 async function runFirstTimeSetup(): Promise<Config> {
   console.log("\n" + chalk.bold.cyan("⚡ Welcome to Neutron CLI"));
   console.log(chalk.dim("  No credentials found. Let's set them up.\n"));
   console.log(chalk.dim("  Get your API key at: ") + chalk.cyan.underline("https://portal.neutron.me") + "\n");
 
-  const apiKey = await promptLine(chalk.bold("  API Key:    "));
+  const apiKey = await promptMasked(chalk.bold("  API Key:    "));
   if (!apiKey) { console.error(chalk.red("  API key is required.")); process.exit(1); }
 
-  const apiSecret = await promptHidden(chalk.bold("  API Secret: "));
+  const apiSecret = await promptMasked(chalk.bold("  API Secret: "));
   if (!apiSecret) { console.error(chalk.red("  API secret is required.")); process.exit(1); }
 
   saveConfigFile({ apiKey, apiSecret });
