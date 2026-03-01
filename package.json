@@ -1,6 +1,6 @@
 {
   "name": "neutron-cli",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "CLI for Neutron Lightning wallet services \u2014 for developers and AI agents",
   "keywords": [
     "neutron",
