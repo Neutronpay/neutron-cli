@@ -9,7 +9,7 @@ export function registerAuth(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = getClient();
+        const client = await getClient();
         const spinner = isPretty(opts) ? spin("Authenticating...") : null;
         const account = await client.account.get() as any;
         spinner?.succeed(chalk.green("Authenticated"));

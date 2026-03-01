@@ -1,42 +1,108 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "fs";
+import { createInterface } from "readline";
 import { homedir } from "os";
 import { join } from "path";
 import { Neutron } from "neutron-sdk";
-import { fail } from "./output.js";
+import { chalk } from "./output.js";
+
+const CONFIG_DIR = join(homedir(), ".neutron");
+const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 interface Config {
   apiKey: string;
   apiSecret: string;
 }
 
-function loadConfig(): Config {
+function loadConfigFile(): Config | null {
+  try {
+    if (!existsSync(CONFIG_PATH)) return null;
+    const raw = readFileSync(CONFIG_PATH, "utf8");
+    const cfg = JSON.parse(raw) as Partial<Config>;
+    if (cfg.apiKey && cfg.apiSecret) return cfg as Config;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveConfigFile(cfg: Config): void {
+  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
+  writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+  chmodSync(CONFIG_PATH, 0o600);
+  chmodSync(CONFIG_DIR, 0o700);
+}
+
+function promptHidden(question: string): Promise<string> {
+  return new Promise((resolve) => {
+    process.stdout.write(question);
+    let input = "";
+    process.stdin.setRawMode?.(true);
+    process.stdin.resume();
+    process.stdin.setEncoding("utf8");
+    function handler(ch: string) {
+      if (ch === "\n" || ch === "\r") {
+        process.stdin.setRawMode?.(false);
+        process.stdin.removeListener("data", handler);
+        process.stdout.write("\n");
+        resolve(input);
+      } else if (ch === "\u0003") {
+        process.exit();
+      } else if (ch === "\u007f") {
+        if (input.length > 0) { input = input.slice(0, -1); process.stdout.write("\b \b"); }
+      } else {
+        input += ch;
+        process.stdout.write("*");
+      }
+    }
+    process.stdin.on("data", handler);
+  });
+}
+
+function promptLine(question: string): Promise<string> {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); });
+  });
+}
+
+async function runFirstTimeSetup(): Promise<Config> {
+  console.log("\n" + chalk.bold.cyan("⚡ Welcome to Neutron CLI"));
+  console.log(chalk.dim("  No credentials found. Let's set them up.\n"));
+  console.log(chalk.dim("  Get your API key at: ") + chalk.cyan.underline("https://portal.neutron.me") + "\n");
+
+  const apiKey = await promptLine(chalk.bold("  API Key:    "));
+  if (!apiKey) { console.error(chalk.red("  API key is required.")); process.exit(1); }
+
+  const apiSecret = await promptHidden(chalk.bold("  API Secret: "));
+  if (!apiSecret) { console.error(chalk.red("  API secret is required.")); process.exit(1); }
+
+  saveConfigFile({ apiKey, apiSecret });
+
+  console.log("\n" + chalk.green("  ✅ Credentials saved to ~/.neutron/config.json"));
+  console.log(chalk.dim("  Permissions set to 600 (private to you)\n"));
+
+  return { apiKey, apiSecret };
+}
+
+export async function loadConfig(): Promise<Config> {
   // 1. Env vars
   const apiKey = process.env.NEUTRON_API_KEY;
   const apiSecret = process.env.NEUTRON_API_SECRET;
   if (apiKey && apiSecret) return { apiKey, apiSecret };
 
   // 2. ~/.neutron/config.json
-  try {
-    const cfgPath = join(homedir(), ".neutron", "config.json");
-    const raw = readFileSync(cfgPath, "utf8");
-    const cfg = JSON.parse(raw) as Partial<Config>;
-    if (cfg.apiKey && cfg.apiSecret) return cfg as Config;
-  } catch {
-    // file not found or malformed — fall through
-  }
+  const cfg = loadConfigFile();
+  if (cfg) return cfg;
 
-  fail(
-    "Missing credentials. Set NEUTRON_API_KEY and NEUTRON_API_SECRET env vars, " +
-      "or create ~/.neutron/config.json with { \"apiKey\": \"...\", \"apiSecret\": \"...\" }",
-    "AUTH_MISSING"
-  );
+  // 3. First-time setup — guide the user interactively
+  return runFirstTimeSetup();
 }
 
 let _client: Neutron | null = null;
 
-export function getClient(): Neutron {
+export async function getClient(): Promise<Neutron> {
   if (!_client) {
-    const cfg = loadConfig();
+    const cfg = await loadConfig();
     _client = new Neutron({ apiKey: cfg.apiKey, apiSecret: cfg.apiSecret });
   }
   return _client;

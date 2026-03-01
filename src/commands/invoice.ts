@@ -11,7 +11,7 @@ export function registerInvoice(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = getClient();
+        const client = await getClient();
         const spinner = isPretty(opts) ? spin("Creating invoice...") : null;
         const result = await client.lightning.createInvoice({
           amountSats: Number(opts.amount),

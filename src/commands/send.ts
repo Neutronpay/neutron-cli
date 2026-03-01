@@ -12,7 +12,7 @@ export function registerSend(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = getClient();
+        const client = await getClient();
         const spinner = isPretty(opts) ? spin("Sending payment...") : null;
         const txn = await client.transactions.create({
           sourceReq: { ccy: opts.currency.toUpperCase(), method: "lightning", amtRequested: Number(opts.amount) },

@@ -23,7 +23,7 @@ export function registerTx(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (id, opts) => {
       try {
-        const client = getClient();
+        const client = await getClient();
         const spinner = isPretty(opts) ? spin("Fetching transaction...") : null;
         const result = await client.transactions.get(id) as any;
         spinner?.succeed(chalk.green("Transaction found"));
@@ -51,7 +51,7 @@ export function registerTx(program: Command): void {
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
-        const client = getClient();
+        const client = await getClient();
         const spinner = isPretty(opts) ? spin("Fetching transactions...") : null;
         const params: Record<string, any> = { limit: Number(opts.limit) };
         if (opts.from) params.fromDate = opts.from;
