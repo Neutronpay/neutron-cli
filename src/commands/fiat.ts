@@ -66,9 +66,13 @@ export function registerFiat(program: Command): void {
         // KYC check — fiat payouts require verification
         const account = await client.account.get() as any;
         const kycStatus = account.kycStatus ?? account.accountStatus ?? account.kycVerified ?? account.status;
-        
-        // KYC is verified if status is "verified" or similar positive states
-        const isKycVerified = kycStatus === "verified" || kycStatus === "kyc_verified" || kycStatus === "active";
+        const ruleGroup = account.txnLegPairRuleGroup?.name ?? '';
+
+        // KYC verified if: status is active/verified AND rule group is NOT non-kyb
+        const isKycVerified = (
+          kycStatus === "verified" || kycStatus === "kyc_verified" ||
+          kycStatus === "active" || kycStatus === "ACTIVE"
+        ) && !ruleGroup.includes('non-kyb');
         
         if (!isKycVerified) {
           spinner?.stop();
