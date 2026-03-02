@@ -70,4 +70,36 @@ export function registerAddress(program: Command): void {
         fail(e?.message ?? "Failed to fetch USDT address", "ADDRESS_ERROR");
       }
     });
+
+  addressCmd
+    .command("ln")
+    .alias("lightning")
+    .description("Get your Lightning Address (reusable, human-readable)")
+    .option("--json", "Output raw JSON (for scripts/agents)")
+    .action(async (opts) => {
+      try {
+        const client = await getClient(opts);
+        const spinner = isPretty(opts) ? spin("Fetching Lightning Address...") : null;
+        const account = await client.account.get();
+        spinner?.succeed(chalk.green("Address loaded"));
+
+        const username = account.extId || account.id;
+        const lightningAddress = `${username}@neutron.me`;
+
+        if (isPretty(opts)) {
+          header("Lightning Address");
+          kv("Address:", chalk.bold.yellow(lightningAddress));
+          kv("Protocol:", "Lightning Network (LNURL)");
+          console.log();
+          console.log(chalk.dim("  💡 This is a permanent, reusable address."));
+          console.log(chalk.dim("     Anyone can send you Bitcoin instantly by paying to this address."));
+          console.log(chalk.dim("     Works with any wallet that supports Lightning Addresses."));
+          console.log();
+        } else {
+          ok({ address: lightningAddress, protocol: "lightning", network: "LNURL" });
+        }
+      } catch (e: any) {
+        fail(e?.message ?? "Failed to fetch Lightning Address", "ADDRESS_ERROR");
+      }
+    });
 }
