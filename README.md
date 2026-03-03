@@ -75,6 +75,7 @@ neutron-cli send --to 0xAbC123... --amount 10 --currency USDT
 
 ### Get deposit addresses
 ```bash
+neutron-cli address ln                   # Lightning Address (user@neutron.me)
 neutron-cli address btc                  # Bitcoin on-chain deposit address
 neutron-cli address usdt                 # USDT on TRON (default)
 neutron-cli address usdt --chain ETH     # USDT on Ethereum

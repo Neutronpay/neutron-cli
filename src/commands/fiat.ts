@@ -57,6 +57,8 @@ export function registerFiat(program: Command): void {
     .requiredOption("--bank-code <code>", "Bank/institution code")
     .requiredOption("--recipient <name>", "Recipient legal full name")
     .requiredOption("--country <code>", "Recipient country code (e.g., VN)")
+    .option("--sender-name <name>", "Sender legal full name (defaults to account display name)")
+    .option("--sender-country <code>", "Sender country code (defaults to account country)")
     .option("--json", "Output raw JSON (for scripts/agents)")
     .action(async (opts) => {
       try {
@@ -91,6 +93,13 @@ export function registerFiat(program: Command): void {
         const destMethod = opts.method.toLowerCase();
         const countryCode = opts.country.toUpperCase();
 
+        // Sender KYC — use provided values or fall back to account KYC info
+        const kycDetails = account.kyc?.details ?? account.kycDetails ?? {};
+        const senderName = opts.senderName || kycDetails.legalFullName || account.displayName || account.extId || "Account Holder";
+        const senderCountryCode = (opts.senderCountry || kycDetails.countryCode || account.countryCode || "VN").toUpperCase();
+        const senderAddress = kycDetails.address1 || kycDetails.address || "N/A";
+        const senderPhone = kycDetails.contactNumber || kycDetails.phone || "N/A";
+
         const txn = await client.fiat.payout({
           sourceCcy,
           sourceAmount,
@@ -100,6 +109,10 @@ export function registerFiat(program: Command): void {
           institutionCode: opts.bankCode,
           recipientName: opts.recipient,
           countryCode,
+          senderName,
+          senderCountryCode,
+          senderAddress,
+          senderPhone,
         }) as any;
 
         const txnId = txn.txnId ?? txn.id;
