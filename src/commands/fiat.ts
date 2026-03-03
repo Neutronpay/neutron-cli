@@ -95,7 +95,7 @@ export function registerFiat(program: Command): void {
 
         // Sender KYC — use provided values or fall back to account KYC info
         const kycDetails = account.kyc?.details ?? account.kycDetails ?? {};
-        const senderName = opts.senderName || kycDetails.legalFullName || account.displayName || account.extId || "Account Holder";
+        const senderName = opts.senderName || kycDetails.legalFullName || account.beneficialAccountName || account.displayName || account.extId || "Account Holder";
         const senderCountryCode = (opts.senderCountry || kycDetails.countryCode || account.countryCode || "VN").toUpperCase();
         const senderAddress = kycDetails.address1 || kycDetails.address || "N/A";
         const senderPhone = kycDetails.contactNumber || kycDetails.phone || "N/A";
