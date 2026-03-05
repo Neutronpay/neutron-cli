@@ -96,9 +96,14 @@ export function registerFiat(program: Command): void {
         // Sender KYC — use provided values or fall back to account KYC info
         const kycDetails = account.kyc?.details ?? account.kycDetails ?? {};
         const senderName = opts.senderName || kycDetails.legalFullName || account.beneficialAccountName || account.displayName || account.extId || "Account Holder";
-        const senderCountryCode = (opts.senderCountry || kycDetails.countryCode || account.countryCode || "VN").toUpperCase();
+        const senderCountryCode = (opts.senderCountry || kycDetails.countryCode || account.countryCode || countryCode || "VN").toUpperCase();
         const senderAddress = kycDetails.address1 || kycDetails.address || "N/A";
-        const senderPhone = kycDetails.contactNumber || kycDetails.phone || "N/A";
+        const rawSenderPhone = kycDetails.contactNumber || kycDetails.phone || "N/A";
+        // Normalise phones to E.164 (add country prefix if missing)
+        const countryPrefixes: Record<string, string> = { VN: "+84", ID: "+62", TH: "+66", SG: "+65", MY: "+60", PH: "+63" };
+        const normalisePhone = (p: string, cc: string) => (!p || p === "N/A" || p.startsWith("+")) ? p : (countryPrefixes[cc] ? countryPrefixes[cc] + p.replace(/^0/, "") : p);
+        const senderPhone = normalisePhone(rawSenderPhone, senderCountryCode);
+        const recipientPhone = normalisePhone(opts.recipientPhone || "N/A", countryCode);
 
         const txn = await client.fiat.payout({
           sourceCcy,
@@ -109,6 +114,7 @@ export function registerFiat(program: Command): void {
           institutionCode: opts.bankCode,
           recipientName: opts.recipient,
           countryCode,
+          recipientPhone,
           senderName,
           senderCountryCode,
           senderAddress,
