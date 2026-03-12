@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
 import { ok, fail, isPretty, spin, header, kv, chalk, Table } from "../output.js";
+import { deriveTxnState, deriveTxnType, formatTxnAmount, deriveTxnDate, deriveTxnUpdatedDate, deriveTxnCurrency, deriveTxnAmountRaw } from "../tx-format.js";
 
 const STATE_COLOR: Record<string, (s: string) => string> = {
   completed:   (s) => chalk.green(s),
@@ -30,10 +31,18 @@ export function registerTx(program: Command): void {
 
         if (isPretty(opts)) {
           header(`Transaction ${chalk.dim(id)}`);
-          kv("Status:", colorState(result.txnState ?? result.status ?? "—"));
-          kv("Amount:", `${(result.amount ?? 0).toLocaleString()} sats`);
-          kv("Type:", result.type ?? "—");
-          kv("Created:", result.createdAt ?? result.created_at ?? "—");
+          kv("Status:", colorState(deriveTxnState(result)));
+          kv("Amount:", chalk.yellow(formatTxnAmount(result)));
+          kv("Currency:", deriveTxnCurrency(result));
+          kv("Type:", deriveTxnType(result));
+          kv("Created:", deriveTxnDate(result));
+          kv("Updated:", deriveTxnUpdatedDate(result));
+          if (result?.sourceReq?.method) kv("Source Method:", result.sourceReq.method);
+          if (result?.destReq?.method) kv("Dest Method:", result.destReq.method);
+          if (typeof result?.sourceReq?.amtRequested === "number") kv("Source Requested:", String(result.sourceReq.amtRequested));
+          if (typeof result?.sourceReq?.amtSettled === "number") kv("Source Settled:", String(result.sourceReq.amtSettled));
+          if (typeof result?.destReq?.amtRequested === "number") kv("Dest Requested:", String(result.destReq.amtRequested));
+          if (typeof result?.destReq?.amtSettled === "number") kv("Dest Settled:", String(result.destReq.amtSettled));
           console.log();
         } else {
           ok(result);
@@ -70,9 +79,9 @@ export function registerTx(program: Command): void {
           for (const t of txns) {
             table.push([
               chalk.dim(t.txnId ?? t.id ?? "—"),
-              colorState(t.txnState ?? t.status ?? "—"),
-              chalk.yellow(`${(t.amount ?? 0).toLocaleString()} sats`),
-              chalk.dim(t.createdAt ?? "—"),
+              colorState(deriveTxnState(t)),
+              chalk.yellow(formatTxnAmount(t)),
+              chalk.dim(deriveTxnDate(t)),
             ]);
           }
           console.log(table.toString());

@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { getClient } from "../client.js";
 import { ok, fail, isPretty, spin, header, kv, chalk } from "../output.js";
+import { deriveTxnState } from "../tx-format.js";
 
 /** Detect payment type from the destination address/invoice */
 function detectPaymentType(to: string): { method: string; ccy: string } {
@@ -35,6 +36,21 @@ function detectPaymentType(to: string): { method: string; ccy: string } {
   
   // Unknown format
   return { method: "unknown", ccy: "UNKNOWN" };
+}
+
+const TERMINAL_SEND_STATES = new Set(["completed", "destsent", "failed", "expired", "srcexpired"]);
+
+async function getTxnWithBoundedPoll(client: any, txnId: string, attempts = 4, delayMs = 500): Promise<any> {
+  let last: any = null;
+  for (let i = 0; i < attempts; i += 1) {
+    last = await client.transactions.get(txnId);
+    const state = deriveTxnState(last).toLowerCase();
+    if (TERMINAL_SEND_STATES.has(state)) return last;
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  return last;
 }
 
 export function registerSend(program: Command): void {
@@ -78,17 +94,38 @@ export function registerSend(program: Command): void {
           // Lightning Address (user@domain.com) — use payAddress SDK method
           if (spinner) spinner.text = "Resolving Lightning address...";
           const txn2 = await client.lightning.payAddress(to, { amountSats: amount }) as any;
-          const confirmed2 = await client.transactions.confirm(txn2.txnId ?? txn2.id) as any;
-          spinner?.succeed(chalk.green("Payment sent"));
+          const txnId2 = txn2.txnId ?? txn2.id;
+          let finalTxn = txn2;
+
+          try {
+            if (spinner) spinner.text = "Checking payment status...";
+            finalTxn = await getTxnWithBoundedPoll(client, txnId2);
+          } catch (statusErr: any) {
+            const message = String(statusErr?.message ?? statusErr ?? "");
+            if (/already in progress/i.test(message)) {
+              finalTxn = await getTxnWithBoundedPoll(client, txnId2);
+            } else {
+              throw statusErr;
+            }
+          }
+
+          const finalState = deriveTxnState(finalTxn);
+          const finalStateLower = finalState.toLowerCase();
+          const completedLike = finalStateLower === "completed" || finalStateLower === "destsent";
+          spinner?.succeed(chalk.green(completedLike ? "Payment sent" : "Payment initiated"));
           if (isPretty(opts)) {
-            header("Payment Sent");
+            header(completedLike ? "Payment Sent" : "Payment Initiated");
+            kv("ID:", txnId2);
             kv("To:", chalk.yellow(to));
             kv("Amount:", chalk.yellow(`${amount.toLocaleString()} sats`));
             kv("Method:", "Lightning Address");
-            kv("Status:", chalk.green(confirmed2.txnState ?? confirmed2.status ?? "Sent"));
+            kv("Status:", completedLike ? chalk.green(finalState || "Sent") : chalk.yellow(finalState || "Processing"));
+            if (!completedLike) {
+              kv("Next:", chalk.dim(`Run neutron-cli tx get ${txnId2}`));
+            }
             console.log();
           } else {
-            ok(confirmed2);
+            ok(finalTxn);
           }
           return;
         } else if (detected.method === "lightning") {
@@ -126,11 +163,23 @@ export function registerSend(program: Command): void {
         const txnId = txn.txnId ?? txn.id;
 
         if (spinner) spinner.text = "Confirming payment...";
-        const confirmed = await client.transactions.confirm(txnId) as any;
-        spinner?.succeed(chalk.green("Payment sent"));
+        let confirmed: any;
+        try {
+          confirmed = await client.transactions.confirm(txnId) as any;
+        } catch (confirmErr: any) {
+          const message = String(confirmErr?.message ?? confirmErr ?? "");
+          if (/already in progress/i.test(message)) {
+            confirmed = await getTxnWithBoundedPoll(client, txnId);
+          } else {
+            throw confirmErr;
+          }
+        }
+        const confirmedState = deriveTxnState(confirmed);
+        const completedLike = ["completed", "destsent"].includes(confirmedState.toLowerCase());
+        spinner?.succeed(chalk.green(completedLike ? "Payment sent" : "Payment initiated"));
 
         if (isPretty(opts)) {
-          header("Payment Sent");
+          header(completedLike ? "Payment Sent" : "Payment Initiated");
           kv("ID:", confirmed.txnId ?? confirmed.id ?? txnId);
           
           // Format amount display
@@ -140,7 +189,10 @@ export function registerSend(program: Command): void {
           kv("Amount:", chalk.yellow(amtDisplay));
           kv("Method:", detected.method);
           kv("To:", to.length > 40 ? to.substring(0, 40) + "..." : to);
-          kv("Status:", chalk.green(confirmed.txnState ?? confirmed.status ?? "Sent"));
+          kv("Status:", completedLike ? chalk.green(confirmedState || "Sent") : chalk.yellow(confirmedState || "Processing"));
+          if (!completedLike) {
+            kv("Next:", chalk.dim(`Run neutron-cli tx get ${confirmed.txnId ?? confirmed.id ?? txnId}`));
+          }
           console.log();
         } else {
           ok(confirmed);
